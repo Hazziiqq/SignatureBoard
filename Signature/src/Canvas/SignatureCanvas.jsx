@@ -41,7 +41,7 @@ const SignatureCanvas = forwardRef(({ onDrawStart, onDrawEnd, strokeColor = 'bla
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     strokeHistory.forEach(stroke => {
       if (stroke.length < 2) return;
       ctx.beginPath();
@@ -49,7 +49,7 @@ const SignatureCanvas = forwardRef(({ onDrawStart, onDrawEnd, strokeColor = 'bla
       ctx.lineWidth = stroke[0].width;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      
+
       ctx.moveTo(stroke[0].x, stroke[0].y);
       for (let i = 1; i < stroke.length - 2; i++) {
         const xc = (stroke[i].x + stroke[i + 1].x) / 2;
@@ -72,25 +72,30 @@ const SignatureCanvas = forwardRef(({ onDrawStart, onDrawEnd, strokeColor = 'bla
   useEffect(() => {
     const canvas = canvasRef.current;
     const parent = canvas.parentElement;
-    
+
     const resizeCanvas = () => {
       // Save current content
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = canvas.width;
       tempCanvas.height = canvas.height;
       tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
-      
+
       // Resize to parent width with high DPI support
+      // Resize to parent width with responsive height
       const rect = parent.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = (rect.width * 0.4) * dpr; // 5:2 Aspect ratio
-      canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${rect.width * 0.4}px`;
-      
+      const width = rect.width;
+      // On mobile/small screens, use a fixed min height or better ratio
+      const height = width < 768 ? Math.max(300, width * 0.6) : width * 0.4;
+
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+
       const ctx = canvas.getContext('2d');
       ctx.scale(dpr, dpr);
-      
+
       // Restore content if any
       redraw(history);
     };
@@ -137,12 +142,12 @@ const SignatureCanvas = forwardRef(({ onDrawStart, onDrawEnd, strokeColor = 'bla
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    
+
     ctx.strokeStyle = strokeColor;
     ctx.lineWidth = lineWidth;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     redraw([...history, newPoints]);
   };
@@ -151,12 +156,12 @@ const SignatureCanvas = forwardRef(({ onDrawStart, onDrawEnd, strokeColor = 'bla
     if (!isDrawing) return;
     setIsDrawing(false);
     setHistory(prev => [...prev, points]);
-    setRedoStack([]); // Clear redo stack on new stroke
+    setRedoStack([]);
     if (onDrawEnd) onDrawEnd();
   };
 
   return (
-    <div className='w-full max-w-4xl mx-auto touch-none'> 
+    <div className='w-full max-w-4xl mx-auto touch-none'>
       <canvas
         ref={canvasRef}
         onMouseDown={startDrawing}
